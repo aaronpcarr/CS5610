@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(boot)
 library(MASS)
 library(e1071)
+library(caTools)
 ```
 
 
@@ -30,7 +31,15 @@ dim(heart)
 summary(heart)
 #Check to see if there's any missing values
 any(is.na(heart))
-attach(heart)
+
+set.seed(63)
+spl = sample.split(heart$HeartDisease, SplitRatio = 0.75)
+
+heartTrain = subset(heart, spl==TRUE)
+heartTest = subset(heart, spl==FALSE)
+
+dim(heartTrain)
+dim(heartTest)
 ```
 
 
@@ -38,57 +47,78 @@ attach(heart)
 ```{r}
 #Logistic Regression (87%)
 glm.fits <- glm(HeartDisease ~ .,
-  family = binomial, data = heart
+  family = binomial, data = heartTrain
 )
-cv.err <- cv.glm(heart, glm.fits)
+cv.err <- cv.glm(heartTrain, glm.fits)
 cv.err$delta
 summary(glm.fits)
 
 glm.probs <- predict(glm.fits, type = "response")
-glm.pred <- rep(0, 918)
+glm.pred <- rep(0, 689)
 glm.pred[glm.probs > .5] = 1
 
-table(glm.pred, HeartDisease)
-mean(glm.pred == HeartDisease)
+table(glm.pred, heartTrain$HeartDisease)
+mean(glm.pred == heartTrain$HeartDisease)
+
+glm.probs <- predict(glm.fits, type = "response", newdata = heartTest)
+glm.predTest <- rep(0, 229)
+glm.predTest[glm.probs > .5] = 1
+
+table(glm.predTest, heartTest$HeartDisease)
+mean(glm.predTest == heartTest$HeartDisease)
+
+##Feature Selection algorithm
+i <- glm(HeartDisease ~ 1,
+                 family = binomial, data = heartTrain)
+
+glm.new <- step(i, direction='both', scope=formula(glm.fits), trace=0)
+
+glm.probs <- predict(glm.new, type = "response", newdata = heartTest)
+glm.predTest <- rep(0, 229)
+glm.predTest[glm.probs > .5] = 1
+
+table(glm.predTest, heartTest$HeartDisease)
+mean(glm.predTest == heartTest$HeartDisease)
+
 ```
 
 
 
 ```{r}
 #Linear Discriminant Analysis (87%)
-lda.fit <- lda(HeartDisease ~ ., data = heart)
+lda.fit <- lda(HeartDisease ~ ., data = heartTrain)
 lda.fit
 plot(lda.fit)
 
-lda.pred <- predict(lda.fit, heart)
+lda.pred <- predict(lda.fit, newdata = heartTest)
 lda.class <- lda.pred$class
-table(lda.class, HeartDisease)
-mean(lda.class == HeartDisease)
+table(lda.class, heartTest$HeartDisease)
+mean(lda.class == heartTest$HeartDisease)
 ```
 
 
 
 ```{r}
-#Quadradic Discriminant Analysis (86%)
+#Quadratic Discriminant Analysis (86%)
 
-qda.fit <- qda(HeartDisease ~ ., data = heart)
+qda.fit <- qda(HeartDisease ~ ., data = heartTrain)
 qda.fit
 
-qda.class <- predict(qda.fit, heart)$class
-table(qda.class, HeartDisease)
-mean(qda.class == HeartDisease)
+qda.class <- predict(qda.fit, newdata = heartTest)$class
+table(qda.class, heartTest$HeartDisease)
+mean(qda.class == heartTest$HeartDisease)
 ```
 
 
 
 ```{r}
 #Naive Bayes (86%)
-nb.fit <- naiveBayes(HeartDisease ~ ., data = heart)
+nb.fit <- naiveBayes(HeartDisease ~ ., data = heartTrain)
 nb.fit
 
-nb.class <- predict(nb.fit, heart)
-table(nb.class, HeartDisease)
-mean(nb.class == HeartDisease)
+nb.class <- predict(nb.fit, newdata = heartTest)
+table(nb.class, heartTest$HeartDisease)
+mean(nb.class == heartTest$HeartDisease)
 
 ```
 
