@@ -16,6 +16,10 @@ library(boot)
 library(MASS)
 library(e1071)
 library(caTools)
+library(dplyr)
+library(tree)
+library(randomForest)
+library(gbm)
 ```
 
 
@@ -23,6 +27,17 @@ library(caTools)
 ```{r}
 #Load Dataset
 heart <- read.csv("heart.csv")
+
+heart <- mutate(heart, typical_angina = as.integer(ChestPainType == "TA")) %>%
+  mutate(atypical_angina = as.integer(ChestPainType == "ATA")) %>%
+  mutate(non_angina_pain = as.integer(ChestPainType == "NAP")) %>%
+  mutate(st_abnorm =  as.integer(RestingECG == "ST")) %>%
+  mutate(left_vent_hypertroph = as.integer(RestingECG == "LVH")) %>%
+  mutate(ExerciseAngina = as.integer(ExerciseAngina == "Y")) %>%
+  mutate(stslope_up = as.integer(ST_Slope == "Up")) %>%
+  mutate(stslope_down = as.integer(ST_Slope == "Down")) %>%
+  mutate(male = as.integer(Sex == "M")) %>%
+  select(- c(ChestPainType, RestingECG, ST_Slope, Sex))
 
 #Give it a look over
 View(heart)
@@ -32,7 +47,7 @@ summary(heart)
 #Check to see if there's any missing values
 any(is.na(heart))
 
-set.seed(63)
+set.seed(97)
 spl = sample.split(heart$HeartDisease, SplitRatio = 0.75)
 
 heartTrain = subset(heart, spl==TRUE)
@@ -112,7 +127,7 @@ mean(qda.class == heartTest$HeartDisease)
 
 
 ```{r}
-#Naive Bayes (86%)
+#Naive Bayes (87%)
 nb.fit <- naiveBayes(HeartDisease ~ ., data = heartTrain)
 nb.fit
 
@@ -122,3 +137,32 @@ mean(nb.class == heartTest$HeartDisease)
 
 ```
 
+```{r}
+#Classification Tree 85%
+tree.heart <- tree(as.factor(HeartDisease) ~ ., data = heartTrain)
+summary(tree.heart)
+
+tree:::print.tree(tree.heart)
+
+tree.pred <- predict(tree.heart, heartTest, type = "class")
+table(tree.pred, heartTest$HeartDisease)
+(72+117)/229
+```
+
+```{r}
+#Random Forest 84%
+rf.heart <- randomForest(as.factor(HeartDisease) ~ ., data = heartTrain, importance = TRUE)
+rf.pred <- predict(rf.heart, heartTest, type = "class")
+table(tree.pred, heartTest$HeartDisease)
+(72 + 117)/229
+importance(rf.heart)
+
+varImpPlot(rf.heart)
+```
+
+```{r}
+# boost.heart <- gbm(HeartDisease ~ ., data = heartTrain, distribution = "bernoulli")
+# boost.pred <- predict(boost.heart, heartTest, type = "response")
+# 
+
+```
