@@ -77,6 +77,12 @@ three = ggplot(data = heart_copy) +
 
 grid.arrange(two,three, ncol= 2)
 ```
+
+```{r}
+ggplot(data = heart_copy) +
+  geom_point(mapping = aes(y = Cholesterol, x = Age, color = factor(HeartDisease)))   +
+      scale_color_brewer(palette = "Set1") +
+      labs(color = "Heart Disease (1 = Heart Disease)")
 ```
 
 
@@ -160,6 +166,8 @@ table(nb.class, heartTest$HeartDisease)
 mean(nb.class == heartTest$HeartDisease)
 
 ```
+
+
 
 ```{r}
 #Classification Tree 85%
