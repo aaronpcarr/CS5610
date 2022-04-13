@@ -20,6 +20,8 @@ library(dplyr)
 library(tree)
 library(randomForest)
 library(gbm)
+library(ggplot2)
+library(gridExtra)
 ```
 
 
@@ -27,6 +29,7 @@ library(gbm)
 ```{r}
 #Load Dataset
 heart <- read.csv("heart.csv")
+heart_copy = read.csv("heart.csv")
 
 heart <- mutate(heart, typical_angina = as.integer(ChestPainType == "TA")) %>%
   mutate(atypical_angina = as.integer(ChestPainType == "ATA")) %>%
@@ -55,6 +58,25 @@ heartTest = subset(heart, spl==FALSE)
 
 dim(heartTrain)
 dim(heartTest)
+```
+
+```{r}
+one = ggplot(data = heart_copy) +
+ geom_col(mapping = aes(x = Sex, y = HeartDisease, fill = Sex)) + labs(y = "Heart Disease")
+zero = ggplot(data = heart_copy) +
+ geom_col(mapping = aes(x = Sex, y = 1 - HeartDisease, fill = Sex)) + labs(y = "Non-Heart Disease")
+
+grid.arrange(one,zero, ncol= 2)
+```
+
+```{r}
+two = ggplot(data = heart_copy) +
+ geom_col(mapping = aes(x = ChestPainType, y = HeartDisease, fill = ChestPainType)) + labs(y = "Heart Disease")
+three = ggplot(data = heart_copy) +
+ geom_col(mapping = aes(x = ChestPainType, y = 1 - HeartDisease, fill = ChestPainType)) + labs(y = "Non-Heart Disease")
+
+grid.arrange(two,three, ncol= 2)
+```
 ```
 
 
@@ -87,6 +109,8 @@ i <- glm(HeartDisease ~ 1,
                  family = binomial, data = heartTrain)
 
 glm.new <- step(i, direction='both', scope=formula(glm.fits), trace=0)
+
+summary(glm.new)
 
 glm.probs <- predict(glm.new, type = "response", newdata = heartTest)
 glm.predTest <- rep(0, 229)
