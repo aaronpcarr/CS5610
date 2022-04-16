@@ -30,7 +30,7 @@ library(randomForest)
 #Load Dataset
 heart <- read.csv("heart.csv")
 heart_copy = read.csv("heart.csv")
-
+View(heart)
 heart <- mutate(heart, typical_angina = as.integer(ChestPainType == "TA")) %>%
   mutate(atypical_angina = as.integer(ChestPainType == "ATA")) %>%
   mutate(non_angina_pain = as.integer(ChestPainType == "NAP")) %>%
@@ -42,11 +42,28 @@ heart <- mutate(heart, typical_angina = as.integer(ChestPainType == "TA")) %>%
   mutate(male = as.integer(Sex == "M")) %>%
   select(- c(ChestPainType, RestingECG, ST_Slope, Sex))
 
+summary(heart)
+
+#There appear to be some gaps in the data, where Cholesterol and RestingBP are labeled as zero, which is obviously just missing information
+#We decided to construct small linear models to predict their values and replace them 
+
+lm.chol_fit <- lm(Cholesterol  ~ ., data = dplyr::filter(heart, Cholesterol != 0))
+lm.bp_fit <- lm(RestingBP ~ ., data = dplyr::filter(heart, RestingBP != 0))
+
+PredictedCholesterol <- predict(lm.chol_fit, dplyr::filter(heart, Cholesterol == 0))
+PredictedBP <- predict(lm.bp_fit, dplyr::filter(heart, RestingBP == 0))
+
+heart <- mutate(heart, Cholesterol = replace(Cholesterol, Cholesterol == 0, PredictedCholesterol))
+heart <- mutate(heart, RestingBP = replace(RestingBP, RestingBP == 0, PredictedBP))
+
+summary(heart)
+
 #Give it a look over
 View(heart)
 names(heart)
 dim(heart)
 summary(heart)
+
 #Check to see if there's any missing values
 any(is.na(heart))
 
@@ -82,7 +99,7 @@ grid.arrange(two,three, ncol= 2)
 
 ```{r}
 #Heart disease by age and cholesterol
-ggplot(data = heart_copy) +
+ggplot(data = heart) +
   geom_point(mapping = aes(y = Cholesterol, x = Age, color = factor(HeartDisease, labels = c("No","Yes"))))   +
       scale_color_brewer(palette = "Set1") +
       labs(color = "Heart Disease")
@@ -116,7 +133,6 @@ nine = ggplot(data = heart_copy) +
 
 grid.arrange(eight,nine, ncol= 2)
 ```
-
 
 
 ```{r}
