@@ -2,7 +2,7 @@
 title: "CS 5610 Project"
 author: "Aaron Carr & Daniel Reardon"
 date: "4/8/2022"
-output: pdf_document
+output: word_document
 ---
 
 ```{r setup, include=FALSE}
@@ -21,7 +21,7 @@ library(tree)
 library(gbm)
 library(ggplot2)
 library(gridExtra)
-library(randomForest)
+#library(randomForest)
 ```
 
 
@@ -30,7 +30,7 @@ library(randomForest)
 #Load Dataset
 heart <- read.csv("heart.csv")
 heart_copy = read.csv("heart.csv")
-View(heart)
+#View(heart)
 heart <- mutate(heart, typical_angina = as.integer(ChestPainType == "TA")) %>%
   mutate(atypical_angina = as.integer(ChestPainType == "ATA")) %>%
   mutate(non_angina_pain = as.integer(ChestPainType == "NAP")) %>%
@@ -59,7 +59,7 @@ heart <- mutate(heart, RestingBP = replace(RestingBP, RestingBP == 0, PredictedB
 summary(heart)
 
 #Give it a look over
-View(heart)
+#View(heart)
 names(heart)
 dim(heart)
 summary(heart)
@@ -87,6 +87,8 @@ zero = ggplot(data = heart_copy) +
 grid.arrange(one,zero, ncol= 2)
 ```
 
+This dataset seems to suggest that Heart Disease is more common among men than women.
+
 ```{r}
 #Heart disease by chest pain type
 two = ggplot(data = heart_copy) +
@@ -105,6 +107,8 @@ ggplot(data = heart) +
       labs(color = "Heart Disease")
 ```
 
+It is difficult to establish a relationship of age, cholesterol, and heart disease based on this scatterplot. It does appear that there that heart disease risk increases with age
+
 ```{r}
 #Heart disease by Resting ECG
 four = ggplot(data = heart_copy) +
@@ -114,6 +118,8 @@ five = ggplot(data = heart_copy) +
 
 grid.arrange(four,five, ncol= 2)
 ```
+
+RestingECG seems to have no affect on heart disease risk.
 
 ```{r}
 #Heart Disease by ST_slope
@@ -125,6 +131,8 @@ seven = ggplot(data = heart_copy) +
 grid.arrange(six,seven, ncol= 2)
 ```
 
+A flat ST_slope seems to be a risk factor for heart disease
+
 ```{r}
 eight = ggplot(data = heart_copy) +
  geom_col(mapping = aes(x = ExerciseAngina, y = HeartDisease, fill = ExerciseAngina)) + labs(y = "Heart Disease")
@@ -134,6 +142,7 @@ nine = ggplot(data = heart_copy) +
 grid.arrange(eight,nine, ncol= 2)
 ```
 
+The presence of an exercise angina appears to be an indicator of heart disease.
 
 ```{r}
 #Logistic Regression (87%)
@@ -175,6 +184,13 @@ mean(glm.predTest == heartTest$HeartDisease)
 
 ```
 
+The Logistic function models the probability of the outcome being a "success" (in this case success means that a patient has heart disease). The estimates return the log odds of a success given a value. For example, the estimate for the sex of the patient is 1.642. Meaning that a male has e^1.642 higher odds (or about 5 times higher odds) of having heart disease than a female.
+
+For a continuous variable like cholesterol, the interpretation is similar except it relates to an increase of one unit. For example if a patient has one cholesterol unit higher than another patient, that patient with have an increase in odds of e^0.003597 (or about 1.0036 times higher odds).
+
+The algorithm used to select the features used in the model was the stepwise regression algorithm. The algorithm begins with nothing in the model but the intercept, and adds the most significant variable. It continues this step until there are no more significant variables. However, at each step it also looks to see that no variables have been made insignificant by the addition of new variables. While this method is not foolproof, it does generally give a good idea of what features to include.
+
+The model seems to agree that the variables we identified as significant in the visualization stage should be included in the model. It also agrees with not including RestingECG in the model as that seemed to have no effect when looking at the bar chart.
 
 
 ```{r}
@@ -206,12 +222,12 @@ mean(qda.class == heartTest$HeartDisease)
 
 ```{r}
 #Naive Bayes (87%)
-nb.fit <- naiveBayes(HeartDisease ~ ., data = heartTrain)
-nb.fit
+#nb.fit <- naiveBayes(HeartDisease ~ ., data = heartTrain)
+#nb.fit
 
-nb.class <- predict(nb.fit, newdata = heartTest)
-table(nb.class, heartTest$HeartDisease)
-mean(nb.class == heartTest$HeartDisease)
+#nb.class <- predict(nb.fit, newdata = heartTest)
+#table(nb.class, heartTest$HeartDisease)
+#mean(nb.class == heartTest$HeartDisease)
 
 ```
 
@@ -231,13 +247,13 @@ table(tree.pred, heartTest$HeartDisease)
 
 ```{r}
 #Random Forest 84%
-rf.heart <- randomForest(as.factor(HeartDisease) ~ ., data = heartTrain, importance = TRUE)
-rf.pred <- predict(rf.heart, heartTest, type = "class")
-table(tree.pred, heartTest$HeartDisease)
-(72 + 117)/229
-importance(rf.heart)
+#rf.heart <- randomForest(as.factor(HeartDisease) ~ ., data = heartTrain, importance = TRUE)
+#rf.pred <- predict(rf.heart, heartTest, type = "class")
+#table(tree.pred, heartTest$HeartDisease)
+#(72 + 117)/229
+#importance(rf.heart)
 
-varImpPlot(rf.heart)
+#varImpPlot(rf.heart)
 ```
 
 ```{r}
