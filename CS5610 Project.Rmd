@@ -99,6 +99,10 @@ three = ggplot(data = heart_copy) +
 grid.arrange(two,three, ncol= 2)
 ```
 
+
+Asymptomatic individuals seem to dominate the heart disease group. There is a condition known as silent ischemia which restricts blood flow to the heart while the person feels no pain.
+
+
 ```{r}
 #Heart disease by age and cholesterol
 ggplot(data = heart) +
@@ -142,7 +146,7 @@ nine = ggplot(data = heart_copy) +
 grid.arrange(eight,nine, ncol= 2)
 ```
 
-The presence of an exercise angina appears to be an indicator of heart disease.
+The presence of exercise angina appears to be an indicator of heart disease.
 
 ```{r}
 #Logistic Regression (87%)
