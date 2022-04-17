@@ -2,14 +2,16 @@
 title: "CS 5610 Project"
 author: "Aaron Carr & Daniel Reardon"
 date: "4/8/2022"
-output: word_document
+output:
+  pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
+Cardiovascular disease is the number 1 leading cause of death in the world, accounting for 31% of all deaths (17.9 million people every year.) Four fifths of these deaths are due to sudden episodes of heart attack and stroke, and one third of these occur in patients under 70 years old. As such, constructing a model which can predict these events prior to their occurrence has wide ranging potential benefits in the medical field. 
 
 ```{r}
 library(boot)
@@ -21,10 +23,10 @@ library(tree)
 library(gbm)
 library(ggplot2)
 library(gridExtra)
-#library(randomForest)
+library(randomForest)
 ```
 
-
+The dataset which we use was constructed using 5 different datasets from Cleveland, Hungary, Switzerland, Long Beach California, and the Stalog Heart Data from the UCI Machine Learning Repository. It contains 918 different observations of which 11 common features are abstracted. These features are Age, Sex, Type of Chest Pain (Typical Angina, Atypical Angina, Non-Anginal Pain, and Asymptomatic), Resting Blood Pressure, Cholesterol, Fasting Blood Sugar (a binary measurement (1 if > 120 ml.dl, 0 otherwise), Resting Electrocardiogram Results (Normal, Having St-T wave abnormality, or showing at least probable left ventricular hypertrophy), Maximum Heart Rate achieved, Exercise Induced angina (yes or no), Oldpeak (as a numeric value), and ST-Slope (Up, down, or flat), and finally, the absence or presence of Heart Disease. The goal of our models is to predict the value of the Heart Disease variable using the values of the other variables as consistently and accurately as possible. 
 
 ```{r}
 #Load Dataset
@@ -47,8 +49,8 @@ summary(heart)
 #There appear to be some gaps in the data, where Cholesterol and RestingBP are labeled as zero, which is obviously just missing information
 #We decided to construct small linear models to predict their values and replace them 
 
-lm.chol_fit <- lm(Cholesterol  ~ ., data = dplyr::filter(heart, Cholesterol != 0))
-lm.bp_fit <- lm(RestingBP ~ ., data = dplyr::filter(heart, RestingBP != 0))
+lm.chol_fit <- lm(Cholesterol  ~ . - HeartDisease, data = dplyr::filter(heart, Cholesterol != 0))
+lm.bp_fit <- lm(RestingBP ~ . - HeartDisease, data = dplyr::filter(heart, RestingBP != 0))
 
 PredictedCholesterol <- predict(lm.chol_fit, dplyr::filter(heart, Cholesterol == 0))
 PredictedBP <- predict(lm.bp_fit, dplyr::filter(heart, RestingBP == 0))
@@ -76,6 +78,8 @@ heartTest = subset(heart, spl==FALSE)
 dim(heartTrain)
 dim(heartTest)
 ```
+Our first task involves wrangling the dataset so that it optimal for use by the models. Glancing over the dataset, it is clear that the some of the variables are categorical and consist of three or more categories; in situations such as these, it is vital to split these categories into binary categories. For the sake of clarity, this is explicitly performed by the dplyr pipeline above and not left to the models themselves. The chest pain type, resting ECG type, exercised induced angina and patient sex have all been reformatted such that the baseline patient is a female with no resting chest pain, a standard ECG, and no exercised induced chest pain.  
+Next, when looking over a summary of the original dataset, it becomes apparent that while there are technically no missing values, some Cholesterol values (and a single Resting Blood Pressure value) are listed as 0, which is clearly erroneous. In order to best address this without skewing the data or removing a large chunk of training data, toy linear regression models were constructed to predict the appropriate values for these variables. In situations where the data appeared to be erroneous, the erroneous value was replaced with the predicted value. 
 
 ```{r}
 #Heart Disease by sex
@@ -111,7 +115,7 @@ ggplot(data = heart) +
       labs(color = "Heart Disease")
 ```
 
-It is difficult to establish a relationship of age, cholesterol, and heart disease based on this scatterplot. It does appear that there that heart disease risk increases with age
+It is difficult to establish a relationship of age, cholesterol, and heart disease based on this scatterplot. It does appear that there that heart disease risk increases with age.
 
 ```{r}
 #Heart disease by Resting ECG
@@ -135,7 +139,7 @@ seven = ggplot(data = heart_copy) +
 grid.arrange(six,seven, ncol= 2)
 ```
 
-A flat ST_slope seems to be a risk factor for heart disease
+A flat ST_slope seems to be a risk factor for heart disease.
 
 ```{r}
 eight = ggplot(data = heart_copy) +
@@ -153,8 +157,6 @@ The presence of exercise angina appears to be an indicator of heart disease.
 glm.fits <- glm(HeartDisease ~ .,
   family = binomial, data = heartTrain
 )
-cv.err <- cv.glm(heartTrain, glm.fits)
-cv.err$delta
 summary(glm.fits)
 
 glm.probs <- predict(glm.fits, type = "response")
@@ -196,6 +198,8 @@ The algorithm used to select the features used in the model was the stepwise reg
 
 The model seems to agree that the variables we identified as significant in the visualization stage should be included in the model. It also agrees with not including RestingECG in the model as that seemed to have no effect when looking at the bar chart.
 
+The feature selected model performs almost identically to the model which includes all features, each having an accuracy score of around 88%. (In fact, on the test data, the feature selection model performs slightly better). 
+
 
 ```{r}
 #Linear Discriminant Analysis (87%)
@@ -208,7 +212,7 @@ lda.class <- lda.pred$class
 table(lda.class, heartTest$HeartDisease)
 mean(lda.class == heartTest$HeartDisease)
 ```
-
+The linear discriminant analysis model also displays a relatively high level of accuracy, at 87%. 
 
 
 ```{r}
@@ -222,19 +226,19 @@ table(qda.class, heartTest$HeartDisease)
 mean(qda.class == heartTest$HeartDisease)
 ```
 
-
+The quandradic discriminant model has an accuracy of only around 85%, close to the other models but slightly weaker. This might be an indication that the boundary between categories can be represented linearly. 
 
 ```{r}
 #Naive Bayes (87%)
-#nb.fit <- naiveBayes(HeartDisease ~ ., data = heartTrain)
-#nb.fit
+nb.fit <- naiveBayes(HeartDisease ~ ., data = heartTrain)
+nb.fit
 
-#nb.class <- predict(nb.fit, newdata = heartTest)
-#table(nb.class, heartTest$HeartDisease)
-#mean(nb.class == heartTest$HeartDisease)
+nb.class <- predict(nb.fit, newdata = heartTest)
+table(nb.class, heartTest$HeartDisease)
+mean(nb.class == heartTest$HeartDisease)
 
 ```
-
+The Naive Bayes model performs about as well as the quadradic discriminant model, at around 84%. 
 
 
 ```{r}
@@ -246,23 +250,18 @@ tree:::print.tree(tree.heart)
 
 tree.pred <- predict(tree.heart, heartTest, type = "class")
 table(tree.pred, heartTest$HeartDisease)
-(72+117)/229
+(78+110)/229
 ```
+The single decision tree model was relatively inaccurate, at only 82% accuracy.
 
 ```{r}
 #Random Forest 84%
-#rf.heart <- randomForest(as.factor(HeartDisease) ~ ., data = heartTrain, importance = TRUE)
-#rf.pred <- predict(rf.heart, heartTest, type = "class")
-#table(tree.pred, heartTest$HeartDisease)
-#(72 + 117)/229
-#importance(rf.heart)
+rf.heart <- randomForest(as.factor(HeartDisease) ~ ., data = heartTrain, importance = TRUE)
+rf.pred <- predict(rf.heart, heartTest, type = "class")
+table(rf.pred, heartTest$HeartDisease)
+(86 + 114)/229
+importance(rf.heart)
 
-#varImpPlot(rf.heart)
+varImpPlot(rf.heart)
 ```
-
-```{r}
-# boost.heart <- gbm(HeartDisease ~ ., data = heartTrain, distribution = "bernoulli")
-# boost.pred <- predict(boost.heart, heartTest, type = "response")
-# 
-
-```
+But the random forest model pushed the accuracy back up to around 87%. The random forest model also seems to indicate that upward sloping ST region is overwhelmingly indicative of the absence of heart disease, in agreement with the linear model.
