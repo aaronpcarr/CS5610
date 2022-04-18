@@ -226,7 +226,7 @@ table(qda.class, heartTest$HeartDisease)
 mean(qda.class == heartTest$HeartDisease)
 ```
 
-The quandradic discriminant model has an accuracy of only around 85%, close to the other models but slightly weaker. This might be an indication that the boundary between categories can be represented linearly. 
+The quadratic discriminant model has an accuracy of only around 85%, close to the other models but slightly weaker. This might be an indication that the boundary between categories can be represented linearly. 
 
 ```{r}
 #Naive Bayes (87%)
@@ -238,7 +238,7 @@ table(nb.class, heartTest$HeartDisease)
 mean(nb.class == heartTest$HeartDisease)
 
 ```
-The Naive Bayes model performs about as well as the quadradic discriminant model, at around 84%. 
+The Naive Bayes model performs about as well as the quadratic discriminant model, at around 84%. 
 
 
 ```{r}
@@ -264,4 +264,6 @@ importance(rf.heart)
 
 varImpPlot(rf.heart)
 ```
-But the random forest model pushed the accuracy back up to around 87%. The random forest model also seems to indicate that upward sloping ST region is overwhelmingly indicative of the absence of heart disease, in agreement with the linear model.
+But the random forest model pushed the accuracy back up to around 87%. The random forest model also seems to indicate that upward sloping ST region is overwhelmingly indicative of the absence of heart disease, in agreement with the logistic model.
+
+In summary, we have decided that the logistic model is the best model to use to solve this problem. It performs at or above the level of the other methods we tried, but it has the added benefit of being the easiest model to understand for someone who is not statistically literate. 
